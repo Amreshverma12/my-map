@@ -1,0 +1,606 @@
+<!-- Save this file as map.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Our Presence Across India</title>
+
+  <!-- POPPINS FONT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- LEAFLET MAP -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:'Poppins',sans-serif;
+    }
+
+    body{
+      background:#f5f5f5;
+    }
+
+    .map-section{
+      padding:80px 20px;
+    }
+
+    .container{
+      max-width:1500px;
+      margin:auto;
+    }
+
+    .heading{
+      text-align:center;
+      margin-bottom:50px;
+    }
+
+    .heading h1{
+      font-size:60px;
+      font-weight:800;
+      color:#111;
+      line-height:1.1;
+    }
+
+    .heading h1 span{
+      color:#0d6efd;
+    }
+
+    .heading p{
+      margin-top:15px;
+      font-size:18px;
+      color:#666;
+      max-width:1000px;
+      margin-inline:auto;
+      line-height:1.7;
+    }
+
+    /* MAP WRAPPER */
+
+    .map-wrapper{
+      position:relative;
+      width:100%;
+      height:750px;
+      border-radius:30px;
+      overflow:hidden;
+      border:1px solid #e8e8e8;
+      box-shadow:0 20px 60px rgba(0,0,0,0.12);
+    }
+
+    #map{
+      width:100%;
+      height:100%;
+    }
+
+    .leaflet-container{
+      background:#fff;
+    }
+
+    /* ── SIDE PANEL ── */
+
+    .side-panel{
+      position:absolute;
+      top:20px;
+      left:20px;
+      z-index:1000;
+      display:flex;
+      align-items:flex-start;
+      gap:0;
+      transition:all .35s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* TOGGLE BUTTON */
+
+    .toggle-btn{
+      width:44px;
+      height:44px;
+      background:#0d6efd;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 4px 14px rgba(13,110,253,.45);
+      flex-shrink:0;
+      transition:background .2s, transform .2s;
+      z-index:2;
+    }
+
+    .toggle-btn:hover{
+      background:#0b5ed7;
+      transform:scale(1.07);
+    }
+
+    .toggle-btn svg{
+      transition:transform .35s cubic-bezier(.4,0,.2,1);
+    }
+
+    .side-panel.open .toggle-btn svg{
+      transform:rotate(180deg);
+    }
+
+    /* PANEL BODY */
+
+    .panel-body{
+      width:0;
+      max-height:680px;
+      overflow:hidden;
+      transition:width .35s cubic-bezier(.4,0,.2,1), opacity .3s;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .side-panel.open .panel-body{
+      width:290px;
+      opacity:1;
+      pointer-events:all;
+      margin-left:10px;
+    }
+
+    .panel-inner{
+      width:290px;
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.13);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* PANEL HEADER */
+
+    .panel-header{
+      padding:16px 18px 12px;
+      background:linear-gradient(135deg,#0d6efd,#3d8bfd);
+      color:#fff;
+    }
+
+    .panel-header h2{
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:.3px;
+    }
+
+    .panel-header p{
+      font-size:11px;
+      opacity:.85;
+      margin-top:3px;
+    }
+
+    /* LOCATION COUNT BADGE */
+
+    .loc-count{
+      display:inline-block;
+      background:rgba(255,255,255,.25);
+      border-radius:50px;
+      padding:2px 10px;
+      font-size:11px;
+      font-weight:600;
+      margin-top:8px;
+    }
+
+    /* CARDS LIST */
+
+    .cards-list{
+      overflow-y:auto;
+      max-height:570px;
+      padding:12px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      scrollbar-width:thin;
+      scrollbar-color:#dde3f0 transparent;
+    }
+
+    .cards-list::-webkit-scrollbar{
+      width:5px;
+    }
+
+    .cards-list::-webkit-scrollbar-track{
+      background:transparent;
+    }
+
+    .cards-list::-webkit-scrollbar-thumb{
+      background:#dde3f0;
+      border-radius:10px;
+    }
+
+    /* LOCATION CARD */
+
+    .loc-card{
+      background:#f8faff;
+      border:1.5px solid #e8eeff;
+      border-radius:14px;
+      padding:12px 14px;
+      cursor:pointer;
+      transition:all .22s ease;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .loc-card::before{
+      content:'';
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:4px;
+      background:#0d6efd;
+      border-radius:4px 0 0 4px;
+      transform:scaleY(0);
+      transition:transform .22s ease;
+    }
+
+    .loc-card:hover,
+    .loc-card.active{
+      background:#edf2ff;
+      border-color:#b9cbff;
+      transform:translateX(4px);
+      box-shadow:0 4px 16px rgba(13,110,253,.1);
+    }
+
+    .loc-card:hover::before,
+    .loc-card.active::before{
+      transform:scaleY(1);
+    }
+
+    .card-top{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+
+    .card-icon{
+      width:36px;
+      height:36px;
+      background:linear-gradient(135deg,#0d6efd,#3d8bfd);
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+      box-shadow:0 3px 10px rgba(13,110,253,.25);
+    }
+
+    .card-icon svg{
+      width:17px;
+      height:17px;
+      fill:#fff;
+    }
+
+    .card-title{
+      flex:1;
+    }
+
+    .card-title h3{
+      font-size:13px;
+      font-weight:700;
+      color:#111;
+      line-height:1.2;
+    }
+
+    .card-title span{
+      font-size:11px;
+      color:#888;
+      font-weight:400;
+    }
+
+    .card-project{
+      font-size:11px;
+      color:#555;
+      line-height:1.55;
+      padding-left:46px;
+      margin-bottom:8px;
+    }
+
+    .card-tag{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:50px;
+      background:#0d6efd15;
+      color:#0d6efd;
+      font-size:10px;
+      font-weight:600;
+      margin-left:46px;
+    }
+
+    /* POPUP */
+
+    .leaflet-popup-content-wrapper{
+      border-radius:18px;
+      padding:0;
+      overflow:hidden;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    }
+
+    .leaflet-popup-content{
+      margin:0 !important;
+      width:240px !important;
+    }
+
+    .popup-card{
+      width:100%;
+      background:#fff;
+    }
+
+    .popup-image{
+      width:100%;
+      height:120px;
+      object-fit:cover;
+    }
+
+    .popup-content{
+      padding:14px;
+    }
+
+    .popup-content h3{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:8px;
+      color:#111;
+    }
+
+    .popup-content p{
+      font-size:12px;
+      color:#444;
+      line-height:1.5;
+      margin-bottom:6px;
+    }
+
+    .popup-content b{
+      color:#000;
+    }
+
+    .tag{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:50px;
+      background:#0d6efd15;
+      color:#0d6efd;
+      font-size:10px;
+      font-weight:600;
+      margin-top:5px;
+    }
+
+    @media(max-width:768px){
+
+      .heading h1{
+        font-size:38px;
+      }
+
+      .heading p{
+        font-size:15px;
+      }
+
+      .map-wrapper{
+        height:600px;
+      }
+
+      .side-panel.open .panel-body{
+        width:260px;
+      }
+
+      .panel-inner{
+        width:260px;
+      }
+
+      .cards-list{
+        max-height:480px;
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+<section class="map-section">
+
+  <div class="container">
+
+    <div class="heading">
+      <h1>Our Presence Across <span>INDIA</span></h1>
+      <p>A growing footprint delivering impactful projects across urban planning, governance, and sustainable development sectors.</p>
+    </div>
+
+    <div class="map-wrapper">
+
+      <!-- SIDE PANEL -->
+      <div class="side-panel open" id="sidePanel">
+
+        <button class="toggle-btn" id="toggleBtn" title="Toggle Locations">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+
+        <div class="panel-body" id="panelBody">
+          <div class="panel-inner">
+
+            <div class="panel-header">
+              <h2>📍 Project Locations</h2>
+              <p>Click a card to focus on map</p>
+              <div class="loc-count" id="locCount">0 Locations</div>
+            </div>
+
+            <div class="cards-list" id="cardsList">
+              <!-- Cards injected by JS -->
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div id="map"></div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- LEAFLET JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+  // MAP INIT
+  const map = L.map('map',{
+    zoomControl:true,
+    scrollWheelZoom:false
+  }).setView([24.8,84],5);
+
+  L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { attribution:'© OpenStreetMap © CARTO' }
+  ).addTo(map);
+
+  // CUSTOM ICON
+  const customIcon = L.icon({
+    iconUrl:'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+    iconSize:[38,38],
+    iconAnchor:[19,38],
+    popupAnchor:[0,-30]
+  });
+
+  // LOCATIONS DATA
+  const locations = [
+    {
+      state:"Tripura",
+      city:"Agartala",
+      coords:[23.8315,91.2868],
+      image:"https://images.unsplash.com/photo-1524499982521-1ffd58dd89ea?q=80&w=1200&auto=format&fit=crop",
+      project:"Urban Homeless Survey (DAY-NULM)<br>PMAY – TPQMA",
+      tag:"Urban Project"
+    },
+    {
+      state:"Uttar Pradesh",
+      city:"Kushinagar",
+      coords:[26.7403,83.8881],
+      image:"https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?q=80&w=1200&auto=format&fit=crop",
+      project:"IEC & MRF Activities (SBM)",
+      tag:"SBM"
+    },
+    {
+      state:"Bihar",
+      city:"Madhubani",
+      coords:[26.3537,86.0710],
+      image:"https://images.unsplash.com/photo-1470004914212-05527e49370b?q=80&w=1200&auto=format&fit=crop",
+      project:"GIS Based Master Plan",
+      tag:"GIS"
+    },
+    {
+      state:"Uttar Pradesh",
+      city:"Jhansi",
+      coords:[25.4484,78.5685],
+      image:"https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=1200&auto=format&fit=crop",
+      project:"Urban Growth & Infrastructure Planning",
+      tag:"Planning"
+    },
+    {
+      state:"Assam",
+      city:"Bongaigaon",
+      coords:[26.4770,90.5582],
+      image:"https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
+      project:"IEC & MRF Awareness Programs",
+      tag:"Awareness"
+    },
+    {
+      state:"Uttar Pradesh",
+      city:"Orai",
+      coords:[25.9907,79.4533],
+      image:"https://images.unsplash.com/photo-1460317442991-0ec209397118?q=80&w=1200&auto=format&fit=crop",
+      project:"Urban Growth & Infrastructure Planning",
+      tag:"Infrastructure"
+    },
+    {
+      state:"Assam",
+      city:"North Lakhimpur",
+      coords:[27.2352,94.1036],
+      image:"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
+      project:"IEC & MRF Activities",
+      tag:"MRF"
+    }
+  ];
+
+  // BUILD MARKERS & CARDS
+  const markers = [];
+  const cardsList = document.getElementById('cardsList');
+  document.getElementById('locCount').textContent = locations.length + ' Locations';
+
+  locations.forEach((loc, i) => {
+
+    // MARKER
+    const marker = L.marker(loc.coords,{ icon:customIcon })
+      .addTo(map)
+      .bindPopup(`
+        <div class="popup-card">
+          <img class="popup-image" src="${loc.image}" alt="${loc.city}">
+          <div class="popup-content">
+            <h3>${loc.state}</h3>
+            <p><b>Location :</b> ${loc.city}</p>
+            <p><b>Project :</b><br>${loc.project}</p>
+            <div class="tag">${loc.tag}</div>
+          </div>
+        </div>
+      `);
+
+    markers.push(marker);
+
+    // CARD
+    const card = document.createElement('div');
+    card.className = 'loc-card';
+    card.dataset.index = i;
+
+    // strip html tags from project for card display
+    const plainProject = loc.project.replace(/<br\s*\/?>/gi, ' · ').replace(/<[^>]+>/g,'');
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+          </svg>
+        </div>
+        <div class="card-title">
+          <h3>${loc.state}</h3>
+          <span>${loc.city}</span>
+        </div>
+      </div>
+      <div class="card-project">${plainProject}</div>
+      <div class="card-tag">${loc.tag}</div>
+    `;
+
+    card.addEventListener('click', () => {
+      // remove active from all
+      document.querySelectorAll('.loc-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      // fly to location & open popup
+      map.flyTo(loc.coords, 10, { duration:1.2 });
+      setTimeout(() => markers[i].openPopup(), 900);
+    });
+
+    cardsList.appendChild(card);
+  });
+
+  // TOGGLE PANEL
+  const sidePanel = document.getElementById('sidePanel');
+  document.getElementById('toggleBtn').addEventListener('click', () => {
+    sidePanel.classList.toggle('open');
+  });
+
+</script>
+
+</body>
+</html>
